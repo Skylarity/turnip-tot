@@ -76,7 +76,25 @@ function load_room(x,y)
 	room.x = x
 	room.y = y
 	
+	-- remove existing objects
+	foreach(objects,destroy_obj)
 	
+	-- add new objects
+	for tx=0,15 do
+		for ty=0,15 do
+			local tile = mget(
+				room.x*16+tx,
+				room.y*16+ty
+			)
+			
+			foreach(classes,
+			function(class)
+				if class.tile == tile then
+					init_obj(class,tx*8,ty*8)
+				end
+			end)
+		end
+	end
 end
 
 -- saving --
