@@ -149,16 +149,16 @@ function _init()
 	-- initialize ui --
 	ui_init()
 	
+	-- initialize tot --
+	local init_spot = get_rnd_tot_spot(64,64)
+	tot = init_obj(turnip_tot,init_spot.x,init_spot.y)
+	
 	-- initialize player --
 	player = init_obj(player,64,64)
 	
 	-- initialize interactables --
 	local ball_spot = get_rnd_tot_spot(64,64)
 	ball = init_obj(ball,ball_spot.x,ball_spot.y)
-	
-	-- initialize tot --
-	local init_spot = get_rnd_tot_spot(64,64)
-	tot = init_obj(turnip_tot,init_spot.x,init_spot.y)
 end
 
 function _update()
@@ -249,6 +249,10 @@ init=function(this)
 	this.spd = 0.25
 	this.target = {x=this.x,y=this.y}
 	this.mv_cntdwn = 0
+	
+	-- state --
+	-- must be last --
+	init_state(p_states[1],nil,this)
 end,
 update=function(this)
 	-- movement --
@@ -284,11 +288,16 @@ update=function(this)
 	-- hunger --
 	this.hunger -= this.hungerrate
 
+	-- state --
+	if this.state.t_update != nil then
+		this.state.t_update(this)
+	end
+
 	-- saving --
 	--save_tot(this)
 end,
 draw=function(this)
-	-- tot --
+	-- tot sprite --
 	this.spr_off += this.moving and 0.25 or 0
 	if this.age == 0 then
 		if this.moving then
@@ -304,6 +313,11 @@ draw=function(this)
 		end
 	end
 	spr(this.spr,this.x,this.y,1,1,this.flip.x,this.flip.y)
+
+	-- state --
+	if this.state.t_draw != nil then
+		this.state.t_draw(this)
+	end
 end
 }
 add(classes,turnip_tot)
@@ -513,7 +527,7 @@ end
 
 player = {
 init=function(p)
-	init_p_state(p_states[1],p)
+	init_state(p_states[1],p)
 end,
 update=function(p)
 	if p.state.update != nil then
@@ -528,10 +542,21 @@ end
 }
 add(classes,player)
 
-function init_p_state(state,p)
-	p.state = state
-	if p.state.init != nil then
-		p.state.init(p)
+function init_state(state,p,t)
+	-- player --
+	if p != nil then
+		p.state = state
+		if p.state.init != nil then
+			p.state.init(p)
+		end
+	end
+	
+	-- tot --
+	if t != nil then
+		t.state = state
+		if t.state.t_init != nil then
+			t.state.t_init(t)
+		end
 	end
 end
 
@@ -541,13 +566,21 @@ p_states = {
 name="idle",
 init=function(p)
 	p.cur_sel = 2
+	
+	-- tot --
+	if tot != nil then
+		init_state(p_states[1],nil,tot)
+	end
+end,
+t_init=function(tot)
+	tot.roam = true
 end,
 update=function(p)
 	if btnp(⬆️) then p.cur_sel-=1 end
 	if btnp(⬇️) then p.cur_sel+=1 end
 	p.cur_sel = mid(2,p.cur_sel,5)
 	if btnp(🅾️) then
-		init_p_state(p_states[p.cur_sel],p)
+		init_state(p_states[p.cur_sel],p)
 	end
 end,
 draw=function(p)
@@ -567,6 +600,12 @@ end
 --█ 2 - play █--
 {
 name="play",
+init=function(p)
+	-- tot --
+	if tot != nil then
+		init_state(p_states[2],nil,tot)
+	end
+end,
 update=function(p)
 	if btnp(⬅️) then
 		ball.class.move(ball,-1,0)
@@ -580,6 +619,11 @@ update=function(p)
 
 	-- back --
 	to_idle_state(p)
+end,
+t_update=function(tot)
+	tot.roam = false
+	tot.target.x = ball.x
+	tot.target.y = ball.y
 end,
 draw=function(p)
 	draw_back("playing")
@@ -625,7 +669,7 @@ end
 
 function to_idle_state(p)
 	if btnp(❎) then
-		init_p_state(p_states[1],p)
+		init_state(p_states[1],p)
 	end
 end
 
