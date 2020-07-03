@@ -36,8 +36,8 @@ tot = nil
 ball = nil
 
 tot_bnd = {
-	minx=5, miny=21,
-	maxx=115, maxy=115
+	minx=6, miny=22,
+	maxx=114, maxy=114
 }
 
 bg_color = 1
@@ -698,18 +698,31 @@ update=function(this)
 	-- ball gfx --
 	this.bx = this.x
 	
-	local prg = 0
+	local val = 0
+	local mn = 0
+	local mx = 0
 	if this.px != this.tx then
-		prg += nrml(this.x,this.tx-this.px,this.tx)
+		val = this.x
+		mn = this.px
+		mx = this.tx
+	elseif this.py != this.ty then
+		val = this.y
+		mn = this.py
+		mx = this.ty
 	end
-	if this.py != this.ty then
-		prg += nrml(this.y,this.ty-this.py,this.ty)
-	end
-	this.by = this.y-abs(sin(prg)*4)
+	local prg = nrml(val,mn,mx)
+	local mult = prg <= 0.5 and 6 or 3
+	this.by = this.y-abs(sin(prg)*mult)
 end,
 draw=function(this)
+	line(this.x+2,this.y+6,
+			this.x+5,this.y+6,
+			0)
 	line(this.x,this.y+7,
 			this.x+7,this.y+7,
+			0)
+	line(this.x+2,this.y+8,
+			this.x+5,this.y+8,
 			0)
 	spr(this.spr,this.bx,this.by)
 end
