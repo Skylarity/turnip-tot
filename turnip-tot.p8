@@ -292,6 +292,12 @@ update=function(this)
 	if this.state.t_update != nil then
 		this.state.t_update(this)
 	end
+	
+	-- clamping stats --
+	this.age = mid(0,this.age,255)
+	this.hp = mid(0,this.hp,255)
+	this.happy = mid(0,this.happy,255)
+	this.hunger = mid(0,this.hunger,255)
 
 	-- saving --
 	--save_tot(this)
@@ -390,7 +396,7 @@ end
 -- moods --
 -----------
 tot_moods = {
---█ happy █--
+--█ 1 - happy █--
 {
 name="happy",
 emote=emote_factory(21,12),
@@ -404,7 +410,7 @@ draw=function(tot)
 	--todo
 end
 },
---█ bored █--
+--█ 2 - bored █--
 {
 name="bored",
 emote=emote_factory(22,15),
@@ -418,7 +424,7 @@ draw=function(tot)
 	--todo
 end
 },
---█ sad █--
+--█ 3 - sad █--
 {
 name="sad",
 emote=emote_factory(23,13),
@@ -432,7 +438,7 @@ draw=function(tot)
 	--todo
 end
 },
---█ hungry █--
+--█ 4 - hungry █--
 {
 name="hungry",
 emote=emote_factory(24,9),
@@ -446,7 +452,7 @@ draw=function(tot)
 	--todo
 end
 },
---█ sick █--
+--█ 5 - sick █--
 {
 name="sick",
 emote=emote_factory(25,2),
@@ -606,6 +612,10 @@ init=function(p)
 		init_state(p_states[2],nil,tot)
 	end
 end,
+t_init=function(tot)
+	tot.ball_touch = 0
+	tot.ball_follow = 0
+end,
 update=function(p)
 	if btnp(⬅️) then
 		ball.class.move(ball,-1,0)
@@ -624,6 +634,36 @@ t_update=function(tot)
 	tot.roam = false
 	tot.target.x = ball.x
 	tot.target.y = ball.y
+	
+	local dist = 8
+	if abs(ball.x-tot.x) < dist
+			and abs(ball.y-tot.y) < dist then
+		tot.ball_touch += 1
+		tot.ball_follow = 0
+	else
+		tot.ball_touch = 0
+		tot.ball_follow += 1
+	end
+	
+	local bt_time = 60
+	local bf_time = 120
+	if tot.ball_touch > bt_time
+			or tot.ball_follow > bf_time then
+		tot.happy -= 0.2
+		
+		if tot.ball_touch > bt_time then
+			-- bored
+			init_tot_mood(2,tot)
+		elseif tot.ball_follow > bf_time then
+			-- sad
+			init_tot_mood(3,tot)
+		end
+	else
+		tot.happy += 1
+		
+		-- happy
+		init_tot_mood(1,tot)
+	end
 end,
 draw=function(p)
 	draw_back("playing")
