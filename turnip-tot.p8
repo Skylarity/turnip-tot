@@ -169,7 +169,7 @@ end
 
 -- debug --
 function log(txt,x,y)
-	print(txt,x,y,flr(time())%2==0 and 0 or 2)
+	print(txt,x,y,flr(time()*4)%2==0 and 0 or 2)
 end
 -->8
 -- turnip tot class --
@@ -187,7 +187,8 @@ init=function(this)
 	this.hpmax = 255
 	this.hp = this.hpmax
 	this.happymax = 255
-	this.mood = "happy"
+	this.mood_i = 1 --happy
+	this.mood = nil
 	this.happy = this.happymax
 	this.hungermax = 255
 	this.hunger = this.hungermax
@@ -197,7 +198,7 @@ init=function(this)
 	if saved == 1 then
 		this.age = dget(save_age)
 		this.hp = dget(save_hp)
-		this.mood = dget(save_mood)
+		this.mood_i = dget(save_mood)
 		this.happy = dget(save_happy)
 		this.hunger = dget(save_hunger)
 	end
@@ -205,6 +206,9 @@ init=function(this)
 	-- gfx --
 	this.spr = this.age==0 and 3 or 4
 	this.spr_off = 0
+	
+	-- mood --
+	init_tot_mood(this.mood_i,this)
 	
 	-- movement --
 	this.roam = true
@@ -239,9 +243,13 @@ update=function(this)
 	
 	-- hunger --
 	this.hunger -= this.hungerrate
+
+	-- saving --
+	--save_tot(this)
 end,
 draw=function(this)
-	this.spr_off += 0.25
+	-- tot --
+	this.spr_off += this.moving and 0.25 or 0
 	if this.age == 0 then
 		if this.moving then
 			this.spr = 19+this.spr_off%2
@@ -256,9 +264,26 @@ draw=function(this)
 		end
 	end
 	spr(this.spr,this.x,this.y,1,1,this.flip.x,this.flip.y)
+	
+	-- mood --
+	log(this.mood.name,
+			127-(#this.mood.name*4),
+			11)
 end
 }
 add(classes,turnip_tot)
+
+function save_tot(tot)
+	dset(save_age,this.age)
+	dset(save_hp,this.hp)
+	dset(save_mood,this.mood)
+	dset(save_happy,this.happy)
+	dset(save_hunger,this.hunger)
+
+	-- set flag
+	saved = 1
+	dset(dget(save_game_saved),saved)
+end
 
 function get_rnd_tot_spot(x,y)
 	local range = 32
@@ -272,6 +297,80 @@ function get_rnd_tot_spot(x,y)
 	return {x=x,y=y}
 end
 
+function init_tot_mood(i,tot)
+	tot.mood = tot_moods[i]
+	if tot.mood.init != nil then
+		tot.mood.init(tot)
+	end
+end
+
+tot_moods = {
+--█ happy █--
+{
+name="happy",
+init=function(tot)
+	--todo
+end,
+update=function(tot)
+	--todo
+end,
+draw=function(tot)
+	--todo
+end
+},
+--█ bored █--
+{
+name="bored",
+init=function(tot)
+	--todo
+end,
+update=function(tot)
+	--todo
+end,
+draw=function(tot)
+	--todo
+end
+},
+--█ sad █--
+{
+name="sad",
+init=function(tot)
+	--todo
+end,
+update=function(tot)
+	--todo
+end,
+draw=function(tot)
+	--todo
+end
+},
+--█ hungry █--
+{
+name="hungry",
+init=function(tot)
+	--todo
+end,
+update=function(tot)
+	--todo
+end,
+draw=function(tot)
+	--todo
+end
+},
+--█ sick █--
+{
+name="sick",
+init=function(tot)
+	--todo
+end,
+update=function(tot)
+	--todo
+end,
+draw=function(tot)
+	--todo
+end
+}
+}
 -->8
 -- ui --
 --------
@@ -338,7 +437,7 @@ end
 
 player = {
 init=function(p)
-	init_state(p_states[1],p)
+	init_p_state(p_states[1],p)
 end,
 update=function(p)
 	if p.state.update != nil then
@@ -353,7 +452,7 @@ end
 }
 add(classes,player)
 
-function init_state(state,p)
+function init_p_state(state,p)
 	p.state = state
 	if p.state.init != nil then
 		p.state.init(p)
@@ -372,12 +471,21 @@ update=function(p)
 	if btnp(⬇️) then p.cur_sel+=1 end
 	p.cur_sel = mid(2,p.cur_sel,5)
 	if btnp(🅾️) then
-		init_state(p_states[p.cur_sel],p)
+		init_p_state(p_states[p.cur_sel],p)
 	end
 end,
 draw=function(p)
-	print("⬆️/⬇️ "..p_states[p.cur_sel].name,
+	print("🅾️ "..p_states[p.cur_sel].name,
 			2,11,7)
+			
+	local wobble = sin(time())
+	
+	if p.cur_sel > 2 then
+		spr(34,12+16+2,10+wobble)
+	end
+	if p.cur_sel < 5 then
+		spr(35,12+16+2,10+wobble)
+	end
 end
 },
 --█ 2 - play █--
@@ -432,7 +540,7 @@ end
 
 function to_idle_state(p)
 	if btnp(❎) then
-		init_state(p_states[1],p)
+		init_p_state(p_states[1],p)
 	end
 end
 
@@ -458,11 +566,11 @@ __gfx__
 0000000000600600000000000000000000d777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-99999999000490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000490000007000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+99999999000490000077700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 44444444000440000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00049000000490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00d49d0000d49d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00049000000490000000000000777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00d49d0000d49d000000000000070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000dd000000490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00049000000490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00049000000490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
