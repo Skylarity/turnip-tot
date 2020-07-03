@@ -9,6 +9,7 @@ __lua__
 room = {x=1, y=1} --0,0 is bg
 objects = {}
 classes = {}
+player = nil
 tot = nil
 
 bg_color = 1
@@ -120,6 +121,9 @@ function _init()
 	-- initialize ui --
 	ui_init()
 	
+	-- initialize player --
+	player = init_obj(player,64,64)
+	
 	-- initialize tot --
 	local init_spot = get_rnd_tot_spot(64,64)
 	tot = init_obj(turnip_tot,init_spot.x,init_spot.y)
@@ -177,78 +181,82 @@ tot_bnd = {
 }
 
 turnip_tot = {
-	--game loop
-	init=function(this)
-		-- stats --
-		this.age = 1 -- 0 or 1
-		this.hpmax = 255
-		this.hp = this.hpmax
-		this.moodmax = 255
-		this.mood = this.moodmax
-		this.hungermax = 255
-		this.hunger = this.hungermax
-		this.hungerrate = 0.01
+init=function(this)
+	-- stats --
+	this.age = 1 -- 0 or 1
+	this.hpmax = 255
+	this.hp = this.hpmax
+	this.happymax = 255
+	this.mood = "happy"
+	this.happy = this.happymax
+	this.hungermax = 255
+	this.hunger = this.hungermax
+	this.hungerrate = 0.01
 
-		-- get saved data --
-		if saved == 1 then
-			this.age = dget(save_age)
-			this.hp = dget(save_hp)
-			this.mood = dget(save_mood)
-			this.hunger = dget(save_hunger)
-		end
-		
-		-- gfx --
-		this.spr = this.age==0 and 3 or 4
-		this.spr_off = 0
-		
-		-- movement --
-		this.moving = false
-		this.spd = 0.25
-		this.target = {x=this.x,y=this.y}
-		this.mv_cntdwn = 0
-	end,
-	update=function(this)
-		-- movement --
-		if this.x < this.target.x then
-			this.flip.x = false
-			this.x += this.spd
-		elseif this.x > this.target.x then
-			this.flip.x = true
-			this.x -= this.spd
-		end
-		if this.y < this.target.y then
-			this.y += this.spd
-		elseif this.y > this.target.y then
-			this.y -= this.spd
-		end
-		this.moving = this.x!=this.target.x or this.y!=this.target.y
-		
+	-- get saved data --
+	if saved == 1 then
+		this.age = dget(save_age)
+		this.hp = dget(save_hp)
+		this.mood = dget(save_mood)
+		this.happy = dget(save_happy)
+		this.hunger = dget(save_hunger)
+	end
+	
+	-- gfx --
+	this.spr = this.age==0 and 3 or 4
+	this.spr_off = 0
+	
+	-- movement --
+	this.roam = true
+	this.moving = false
+	this.spd = 0.25
+	this.target = {x=this.x,y=this.y}
+	this.mv_cntdwn = 0
+end,
+update=function(this)
+	-- movement --
+	if this.x < this.target.x then
+		this.flip.x = false
+		this.x += this.spd
+	elseif this.x > this.target.x then
+		this.flip.x = true
+		this.x -= this.spd
+	end
+	if this.y < this.target.y then
+		this.y += this.spd
+	elseif this.y > this.target.y then
+		this.y -= this.spd
+	end
+	this.moving = this.x!=this.target.x or this.y!=this.target.y
+	
+	if this.roam then
 		this.mv_cntdwn -= 1
 		if this.mv_cntdwn <= 0 then
 			this.mv_cntdwn = rnd(200)+50
 			this.target = get_rnd_tot_spot(this.x,this.y)
 		end
-		
-		-- hunger --
-		this.hunger -= this.hungerrate
-	end,
-	draw=function(this)
-		this.spr_off += 0.25
-		if this.age == 0 then
-			if this.moving then
-				this.spr = 19+this.spr_off%2
-			else
-				this.spr = 3
-			end
-		else
-			if this.moving then
-				this.spr = 16+this.spr_off%3
-			else
-				this.spr = 4
-			end
-		end
-		spr(this.spr,this.x,this.y,1,1,this.flip.x,this.flip.y)
 	end
+	
+	-- hunger --
+	this.hunger -= this.hungerrate
+end,
+draw=function(this)
+	this.spr_off += 0.25
+	if this.age == 0 then
+		if this.moving then
+			this.spr = 19+this.spr_off%2
+		else
+			this.spr = 3
+		end
+	else
+		if this.moving then
+			this.spr = 16+this.spr_off%3
+		else
+			this.spr = 4
+		end
+	end
+	spr(this.spr,this.x,this.y,1,1,this.flip.x,this.flip.y)
+end
 }
 add(classes,turnip_tot)
 
@@ -289,15 +297,15 @@ function ui_draw()
 		hp_clrbg,hp_clrfg,
 		"♥")
 	--mood
-	local md_clrbg = tot.hp < tot.hpmax / 2 and bad_bg or 1
-	local md_clrfg = tot.hp < tot.hpmax / 2 and bad_fg or 12
+	local hy_clrbg = tot.happy < tot.happymax / 2 and bad_bg or 1
+	local hy_clrfg = tot.happy < tot.happymax / 2 and bad_fg or 12
 	ui_bar(32,0,63,
-		tot.moodmax,tot.mood,
-		md_clrbg,md_clrfg,
+		tot.happymax,tot.happy,
+		hy_clrbg,hy_clrfg,
 		"😐")
 	--hunger
-	local hg_clrbg = tot.hp < tot.hpmax / 2 and bad_bg or 4
-	local hg_clrfg = tot.hp < tot.hpmax / 2 and bad_fg or 9
+	local hg_clrbg = tot.hunger < tot.hungermax / 2 and bad_bg or 4
+	local hg_clrfg = tot.hunger < tot.hungermax / 2 and bad_fg or 9
 	ui_bar(96,0,31,
 		tot.hungermax,tot.hunger,
 		hg_clrbg,hg_clrfg,
@@ -323,6 +331,113 @@ function ui_bar(x,y,w,
 	rect(x,y,x+w,y+8,7)
 	--label
 	print(txt,x+(w/2)-3,y+2,7)
+end
+-->8
+-- player --
+------------
+
+player = {
+init=function(p)
+	init_state(p_states[1],p)
+end,
+update=function(p)
+	if p.state.update != nil then
+		p.state.update(p)
+	end
+end,
+draw=function(p)
+	if p.state.draw != nil then
+		p.state.draw(p)
+	end
+end
+}
+add(classes,player)
+
+function init_state(state,p)
+	p.state = state
+	if p.state.init != nil then
+		p.state.init(p)
+	end
+end
+
+p_states = {
+--█ 1 - idle █--
+{
+name="idle",
+init=function(p)
+	p.cur_sel = 2
+end,
+update=function(p)
+	if btnp(⬆️) then p.cur_sel-=1 end
+	if btnp(⬇️) then p.cur_sel+=1 end
+	p.cur_sel = mid(2,p.cur_sel,5)
+	if btnp(🅾️) then
+		init_state(p_states[p.cur_sel],p)
+	end
+end,
+draw=function(p)
+	print("⬆️/⬇️ "..p_states[p.cur_sel].name,
+			2,11,7)
+end
+},
+--█ 2 - play █--
+{
+name="play",
+init=function(p)
+end,
+update=function(p)
+	to_idle_state(p)
+end,
+draw=function(p)
+	draw_back("playing")
+end
+},
+--█ 3 - feed █--
+{
+name="feed",
+init=function(p)
+end,
+update=function(p)
+	to_idle_state(p)
+end,
+draw=function(p)
+	draw_back("feeding")
+end
+},
+--█ 4 - tidy █--
+{
+name="tidy",
+init=function(p)
+end,
+update=function(p)
+	to_idle_state(p)
+end,
+draw=function(p)
+	draw_back("tidying")
+end
+},
+--█ 5 - cure █--
+{
+name="cure",
+init=function(p)
+end,
+update=function(p)
+	to_idle_state(p)
+end,
+draw=function(p)
+	draw_back("curing")
+end
+}
+}
+
+function to_idle_state(p)
+	if btnp(❎) then
+		init_state(p_states[1],p)
+	end
+end
+
+function draw_back(action)
+	print("❎ stop "..action,2,11,7)
 end
 __gfx__
 000000000000000000000000000000000000b0000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000
