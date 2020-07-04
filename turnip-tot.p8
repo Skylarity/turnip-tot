@@ -173,18 +173,12 @@ function load_saved_time()
 end
 
 function save_time(tm)
-	dset(save_year,
-			tm.year),
-	dset(save_month,
-			tm.month),
-  dset(save_day,
-  		tm.day),
-	dset(save_hour,
-			tm.hour),
-	dset(save_minute,
-			tm.minute),
-	dset(save_second,
-			tm.second)
+	dset(save_year,tm.year)
+	dset(save_month,tm.month)
+  dset(save_day,tm.day)
+	dset(save_hour,tm.hour)
+	dset(save_minute,tm.minute)
+	dset(save_second,tm.second)
 end
 
 function compare_time(prev_tm)
@@ -434,7 +428,8 @@ update=function(this)
 	this.x+=cos(time())*0.25
 	
 	this.timer -= 1
-	if this.timer <= 0 then
+	if this.timer <= 0
+		or this.y < 16 then
 		del(objects,this)
 	end
 end,
