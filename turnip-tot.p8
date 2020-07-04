@@ -658,13 +658,17 @@ draw=function(p)
 			2,11,7)
 	
 	-- up/down arrows --
-	local wobble = sin(time())
+	local wobble = sin(time())*2
+	wobble = mid(-1,wobble,1)
 	if p.cur_sel > 2 then
-		spr(34,30,10+wobble)
+		spr(34,30,9+wobble)
 	end
 	if p.cur_sel < 5 then
-		spr(35,30,10+wobble)
+		spr(35,30,9+wobble)
 	end
+	
+	-- border --
+	rect(0,9,37,17,7)
 	
 	-- ready indicator --
 	-- bg
@@ -674,10 +678,16 @@ draw=function(p)
 	-- border
 	rect(38,9,127,17,7)
 	-- label
-	local minute = flr(time()/60)
-	local second = flr(time())
-	local str = tostr(minute)
-	str ..= flr(time()*2)%2==0 and ":" or " "
+	local flasher = flr(time()*2)%2==0 and ":" or " "
+	local hour = flr(time()/60/60)%12
+	local minute = flr(time()/60)%60
+	local second = flr(time())%60
+	
+	local str = ""
+	str ..= tostr(hour)
+	str ..= flasher
+	str ..= tostr(minute)
+	str ..= flasher
 	str ..= tostr(second)
 	str ..= " remaining"
 	
