@@ -181,70 +181,24 @@ function save_time(tm)
 	dset(save_second,tm.second)
 end
 
-function is_leap(y)
-	return y%4==0
-				and y%100==0
-				and y%400==0
-end
-
-function month_days(y,m)
-	local days
-
-	if m == 1 then
-		-- january
-		days = 31
-	elseif m == 2 then
-		-- february
-		if is_leap(y) then
-			-- leap year
-			days = 29
-		else 
-			days = 28
-		end
-	elseif m == 3 then
-		-- march
-		days = 31
-	elseif m == 4 then
-		-- april
-		days = 30
-	elseif m == 5 then
-		-- may
-		days = 31
-	elseif m == 6 then
-		-- june
-		days = 30
-	elseif m == 7 then
-		-- july
-		days = 31
-	elseif m == 8 then
-		-- august
-		days = 31
-	elseif m == 9 then
-		-- september
-		days = 30
-	elseif m == 10 then
-		-- october
-		days = 31
-	elseif m == 11 then
-		-- november
-		days = 30
-	elseif m == 12 then
-		-- december
-		days = 31
-	end
-	
-	return days
-end
-
 function get_timestamp(tm)
-	local y_days = not is_leap(tm.year) and 365 or 366
-	local m_days = month_days(tm.year,tm.month)
 	return tm.second
 			+ (tm.minute*60)
-			+ (tm.hour*60*60)
-			+ (tm.day*24*60*60)
-			+ (tm.month*m_days*24*60*60)
-			+ (tm.year*y_days*24*60*60)
+			+ (tm.hour*3600)
+			+ (tm.day*86400)
+			+ (tm.month*2629743)
+			+ (tm.year*31556926)
+end
+
+function split_ts(ts)
+	return {
+		year = flr(ts/31556926),
+		month = flr(ts/2629743),
+		day = flr(ts/86400),
+		hour = flr(ts/3600),
+		minute = flr(ts/60),
+		second = ts,
+	}
 end
 
 function time_diff(pt)
@@ -748,17 +702,27 @@ draw=function(p)
 	rect(38,9,127,17,7)
 	-- label
 	local flasher = flr(time()*2)%2==0 and ":" or " "
-	local hour = flr(time()/60/60)%12
-	local minute = flr(time()/60)%60
-	local second = flr(time())%60
+	
+	-- time until ready
+	local ts = get_timestamp({
+		year=2019,
+		month=2,
+	  day=14,
+		hour=18,
+		minute=42,
+		second=24
+	})
+	local date = split_ts(ts)
+	cls()
+	stop(ts)
+	stop("year: "..date.year
+		..", month: "..date.month
+		..", day: "..date.day
+		..", hour: "..date.hour
+		..", minute: "..date.minute
+		..", second: "..date.second)
 	
 	local str = ""
-	str ..= tostr(hour)
-	str ..= flasher
-	str ..= tostr(minute)
-	str ..= flasher
-	str ..= tostr(second)
-	str ..= " remaining"
 	
 	if ready then str = "ready" end
 	
