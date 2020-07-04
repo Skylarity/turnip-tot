@@ -133,11 +133,66 @@ end
 save_id = "skylarity_turnip_tot_v0"
 saved = 0
 save_game_saved = 0
+-- tot
 save_age = 1
 save_hp = 2
 save_mood = 3
 save_hunger = 4
+-- time
+save_year = 5
+save_month = 6
+save_day = 7
+save_hour = 8
+save_minute = 9
+save_second = 10
 
+-- time --
+----------
+last_played = {}
+
+function get_cur_time()
+	return {
+		year=stat(90),
+		month=stat(91),
+	  day=stat(92),
+		hour=stat(93),
+		minute=stat(94),
+		second=stat(95)
+	}
+end
+
+function load_saved_time()
+	return {
+		year=dget(save_year),
+		month=dget(save_month),
+	  day=dget(save_day),
+		hour=dget(save_hour),
+		minute=dget(save_minute),
+		second=dget(save_second)
+	}
+end
+
+function save_time(tm)
+	dset(save_year,
+			tm.year),
+	dset(save_month,
+			tm.month),
+  dset(save_day,
+  		tm.day),
+	dset(save_hour,
+			tm.hour),
+	dset(save_minute,
+			tm.minute),
+	dset(save_second,
+			tm.second)
+end
+
+function compare_time(prev_tm)
+	local cur_tm = get_cur_time()
+	local delta = 0
+	
+	--todo: add stuff together
+end
 
 -- game loop --
 ---------------
@@ -209,6 +264,14 @@ end
 ----------------------
 
 turnip_tot = {
+feed=function(this,healthy)
+	this.hunger = this.hungermax
+	
+	if not healthy then
+		this.happy += this.happymax/2
+		this.health -= this.health/4
+	end
+end,
 init=function(this)
 	-- stats --
 	this.age = 1 -- 0 or 1
@@ -590,17 +653,45 @@ update=function(p)
 	end
 end,
 draw=function(p)
-	print("🅾️ "..p_states[p.cur_sel].name,
-			2,11,7)
-			
-	local wobble = sin(time())
+	local ready = false
 	
+	-- bg --
+	rectfill(0,9,37,17,ready and 3 or 2)
+	
+	-- text --
+	print((ready and "🅾️" or "⧗").." "..p_states[p.cur_sel].name,
+			2,11,7)
+	
+	-- up/down arrows --
+	local wobble = sin(time())
 	if p.cur_sel > 2 then
-		spr(34,12+16+2,10+wobble)
+		spr(34,30,10+wobble)
 	end
 	if p.cur_sel < 5 then
-		spr(35,12+16+2,10+wobble)
+		spr(35,30,10+wobble)
 	end
+	
+	-- ready indicator --
+	-- bg
+	rectfill(38,9,127,17,6)
+	-- fg
+	rectfill(38,9,127,17,7)
+	-- border
+	rect(38,9,127,17,7)
+	-- label
+	local minute = flr(time()/60)
+	local second = flr(time())
+	local str = tostr(minute)
+	str ..= flr(time()*2)%2==0 and ":" or " "
+	str ..= tostr(second)
+	str ..= " remaining"
+	
+	if ready then str = "ready" end
+	
+	print(str,
+			40,
+			11,
+			0)
 end
 },
 --█ 2 - play █--
@@ -720,6 +811,8 @@ end
 -- interactables --
 -------------------
 
+-- ball --
+----------
 ball = {
 name="ball",
 tile=36,
@@ -811,6 +904,31 @@ end
 }
 add(classes,ball)
 
+-- food --
+----------
+food = {
+healthy=true,
+init=function(f)
+	f.healthy = f.class.healthy
+	
+	f.tile = f.healthy and 39 or 40
+end,
+update=function(f)
+	local col = f.check(tot,f.x,f.y)
+	if col != nil then
+		tot.feed(tot,f.healthy)
+		del(objects,f)
+	end
+end
+}
+add(classes,food)
+
+function create_food(healthy,x,y)
+	local f = deepcopy(food)
+	f.healthy = healthy
+	init_obj(f,x,y)
+end
+
 -->8
 -- particles --
 ---------------
@@ -821,11 +939,15 @@ t = 10,
 init=function(p)
 	p.t = p.class.t
 	p.c = p.class.c
+	
+	p.dx = (rnd(2)-1)*.5
+	p.dy = (rnd(2)-1)*.5
+	
 	p.timer = rnd(p.t)+(p.t/2)
 end,
 update=function(p)
-	p.x += rnd(2)-1
-	p.y += rnd(2)-1
+	p.x += p.dx
+	p.y += p.dy
 	
 	p.timer -= 1
 	if p.timer <= 0 then
