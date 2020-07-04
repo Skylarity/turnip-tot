@@ -181,11 +181,80 @@ function save_time(tm)
 	dset(save_second,tm.second)
 end
 
-function compare_time(prev_tm)
-	local cur_tm = get_cur_time()
-	local delta = 0
+function is_leap(y)
+	return y%4==0
+				and y%100==0
+				and y%400==0
+end
+
+function month_days(y,m)
+	local days
+
+	if m == 1 then
+		-- january
+		days = 31
+	elseif m == 2 then
+		-- february
+		if is_leap(y) then
+			-- leap year
+			days = 29
+		else 
+			days = 28
+		end
+	elseif m == 3 then
+		-- march
+		days = 31
+	elseif m == 4 then
+		-- april
+		days = 30
+	elseif m == 5 then
+		-- may
+		days = 31
+	elseif m == 6 then
+		-- june
+		days = 30
+	elseif m == 7 then
+		-- july
+		days = 31
+	elseif m == 8 then
+		-- august
+		days = 31
+	elseif m == 9 then
+		-- september
+		days = 30
+	elseif m == 10 then
+		-- october
+		days = 31
+	elseif m == 11 then
+		-- november
+		days = 30
+	elseif m == 12 then
+		-- december
+		days = 31
+	end
 	
-	--todo: add stuff together
+	return days
+end
+
+function get_timestamp(tm)
+	local y_days = not is_leap(tm.year) and 365 or 366
+	local m_days = month_days(tm.year,tm.month)
+	return tm.second
+			+ (tm.minute*60)
+			+ (tm.hour*60*60)
+			+ (tm.day*24*60*60)
+			+ (tm.month*m_days*24*60*60)
+			+ (tm.year*y_days*24*60*60)
+end
+
+function time_diff(pt)
+	-- prev timestamp
+	local pts = get_timestamp(pt)
+	-- current timestamp
+	local cts = get_timestamp(
+			get_cur_time())
+
+	return cts-pts
 end
 
 -- game loop --
