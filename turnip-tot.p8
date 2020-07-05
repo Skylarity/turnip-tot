@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 28
+version 29
 __lua__
 --ˇturnip totˇ
 --made with ♥ by skyler rexroad
@@ -707,7 +707,7 @@ draw=function(p)
 	local ts = get_timestamp({
 		year=2019,
 		month=2,
-	  day=14,
+	 day=14,
 		hour=18,
 		minute=42,
 		second=24
